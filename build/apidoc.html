@@ -1,0 +1,477 @@
+<div class="apidocDiv">
+<style>
+/*csslint
+*/
+.apidocDiv {
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.apidocDiv a[href] {
+    color: #33f;
+    font-weight: bold;
+    text-decoration: none;
+}
+.apidocDiv a[href]:hover {
+    text-decoration: underline;
+}
+.apidocCodeCommentSpan {
+    background: #bbf;
+    color: #000;
+    display: block;
+}
+.apidocCodeKeywordSpan {
+    color: #d00;
+    font-weight: bold;
+}
+.apidocCodePre {
+    background: #eef;
+    border: 1px solid;
+    color: #777;
+    padding: 5px;
+    white-space: pre-wrap;
+}
+.apidocFooterDiv {
+    margin-top: 20px;
+    text-align: center;
+}
+.apidocModuleLi {
+    margin-top: 10px;
+}
+.apidocSectionDiv {
+    border-top: 1px solid;
+    margin-top: 20px;
+}
+.apidocSignatureSpan {
+    color: #777;
+    font-weight: bold;
+}
+</style>
+<h1>api documentation for
+    <a
+
+        href="http://github.com/ScottHamper/Cookies"
+
+    >cookies-js (v1.2.3)</a>
+</h1>
+<h4>Client-Side Cookie Manipulation API</h4>
+<div class="apidocSectionDiv"><a
+    href="#apidoc.tableOfContents"
+    id="apidoc.tableOfContents"
+><h1>table of contents</h1></a><ol>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.cookies-js">module cookies-js</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.cookies-js.cookies-js">
+            function <span class="apidocSignatureSpan"></span>cookies-js
+            <span class="apidocSignatureSpan">(window)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.cookies-js.Cookies">
+            function <span class="apidocSignatureSpan">cookies-js.</span>Cookies
+            <span class="apidocSignatureSpan">(window)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.cookies-js.Cookies">module cookies-js.Cookies</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.cookies-js.Cookies.Cookies">
+            function <span class="apidocSignatureSpan">cookies-js.</span>Cookies
+            <span class="apidocSignatureSpan">(window)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+</ol></div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.cookies-js" id="apidoc.module.cookies-js">module cookies-js</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.cookies-js.cookies-js" id="apidoc.element.cookies-js.cookies-js">
+        function <span class="apidocSignatureSpan"></span>cookies-js
+        <span class="apidocSignatureSpan">(window)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">cookies-js = function (window) {
+    if (typeof window.document !== &#x27;object&#x27;) {
+        throw new Error(&#x27;Cookies.js requires a `window` with a `document` object&#x27;);
+    }
+
+    var Cookies = function (key, value, options) {
+        return arguments.length === 1 ?
+            Cookies.get(key) : Cookies.set(key, value, options);
+    };
+
+    // Allows for setter injection in unit tests
+    Cookies._document = window.document;
+
+    // Used to ensure cookie keys do not collide with
+    // built-in `Object` properties
+    Cookies._cacheKeyPrefix = &#x27;cookey.&#x27;; // Hurr hurr, :)
+
+    Cookies._maxExpireDate = new Date(&#x27;Fri, 31 Dec 9999 23:59:59 UTC&#x27;);
+
+    Cookies.defaults = {
+        path: &#x27;/&#x27;,
+        secure: false
+    };
+
+    Cookies.get = function (key) {
+        if (Cookies._cachedDocumentCookie !== Cookies._document.cookie) {
+            Cookies._renewCache();
+        }
+
+        var value = Cookies._cache[Cookies._cacheKeyPrefix + key];
+
+        return value === undefined ? undefined : decodeURIComponent(value);
+    };
+
+    Cookies.set = function (key, value, options) {
+        options = Cookies._getExtendedOptions(options);
+        options.expires = Cookies._getExpiresDate(value === undefined ? -1 : options.expires);
+
+        Cookies._document.cookie = Cookies._generateCookieString(key, value, options);
+
+        return Cookies;
+    };
+
+    Cookies.expire = function (key, options) {
+        return Cookies.set(key, undefined, options);
+    };
+
+    Cookies._getExtendedOptions = function (options) {
+        return {
+            path: options &#x26;&#x26; options.path || Cookies.defaults.path,
+            domain: options &#x26;&#x26; options.domain || Cookies.defaults.domain,
+            expires: options &#x26;&#x26; options.expires || Cookies.defaults.expires,
+            secure: options &#x26;&#x26; options.secure !== undefined ?  options.secure : Cookies.defaults.secure
+        };
+    };
+
+    Cookies._isValidDate = function (date) {
+        return Object.prototype.toString.call(date) === &#x27;[object Date]&#x27; &#x26;&#x26; !isNaN(date.getTime());
+    };
+
+    Cookies._getExpiresDate = function (expires, now) {
+        now = now || new Date();
+
+        if (typeof expires === &#x27;number&#x27;) {
+            expires = expires === Infinity ?
+                Cookies._maxExpireDate : new Date(now.getTime() + expires * 1000);
+        } else if (typeof expires === &#x27;string&#x27;) {
+            expires = new Date(expires);
+        }
+
+        if (expires &#x26;&#x26; !Cookies._isValidDate(expires)) {
+            throw new Error(&#x27;`expires` parameter cannot be converted to a valid Date instance&#x27;);
+        }
+
+        return expires;
+    };
+
+    Cookies._generateCookieString = function (key, value, options) {
+        key = key.replace(/[^#$&#x26;+\^`|]/g, encodeURIComponent);
+        key = key.replace(/\(/g, &#x27;%28&#x27;).replace(/\)/g, &#x27;%29&#x27;);
+        value = (value + &#x27;&#x27;).replace(/[^!#$&#x26;-+\--:&#x3c;-\[\]-~]/g, encodeURIComponent);
+        options = options || {};
+
+        var cookieString = key + &#x27;=&#x27; + value;
+        cookieString += options.path ? &#x27;;path=&#x27; + options.path : &#x27;&#x27;;
+        cookieString += options.domain ? &#x27;;domain=&#x27; + options.domain : &#x27;&#x27;;
+        cookieString += options.expires ? &#x27;;expires=&#x27; + options.expires.toUTCString() : &#x27;&#x27;;
+        cookieString += options.secure ? &#x27;;secure&#x27; : &#x27;&#x27;;
+
+        return cookieString;
+    };
+
+    Cookies._getCacheFromString = function (documentCookie) {
+        var cookieCache = {};
+        var cookiesArray = documentCookie ? documentCookie.split(&#x27;; &#x27;) : [];
+
+        for (var i = 0; i &#x3c; cookiesArray.length; i++) {
+            var cookieKvp = Cookies._getKeyValuePairFromCookieString(cookiesArray[i]);
+
+            if (cookieCache[Cookies._cacheKeyPrefix + cookieKvp.key] === undefined) {
+                cookieCache[Cookies._cacheKeyPrefix + cookieKvp.key] = cookieKvp.value;
+            }
+        }
+
+        return cookieCache;
+    };
+
+    Cookies._getKeyValuePairFromCookieString = function (cookieString) {
+        // &#x22;=&#x22; is a valid character in a cookie value according to RFC6265, so cannot `spli ...</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.cookies-js.Cookies" id="apidoc.element.cookies-js.Cookies">
+        function <span class="apidocSignatureSpan">cookies-js.</span>Cookies
+        <span class="apidocSignatureSpan">(window)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">Cookies = function (window) {
+    if (typeof window.document !== &#x27;object&#x27;) {
+        throw new Error(&#x27;Cookies.js requires a `window` with a `document` object&#x27;);
+    }
+
+    var Cookies = function (key, value, options) {
+        return arguments.length === 1 ?
+            Cookies.get(key) : Cookies.set(key, value, options);
+    };
+
+    // Allows for setter injection in unit tests
+    Cookies._document = window.document;
+
+    // Used to ensure cookie keys do not collide with
+    // built-in `Object` properties
+    Cookies._cacheKeyPrefix = &#x27;cookey.&#x27;; // Hurr hurr, :)
+
+    Cookies._maxExpireDate = new Date(&#x27;Fri, 31 Dec 9999 23:59:59 UTC&#x27;);
+
+    Cookies.defaults = {
+        path: &#x27;/&#x27;,
+        secure: false
+    };
+
+    Cookies.get = function (key) {
+        if (Cookies._cachedDocumentCookie !== Cookies._document.cookie) {
+            Cookies._renewCache();
+        }
+
+        var value = Cookies._cache[Cookies._cacheKeyPrefix + key];
+
+        return value === undefined ? undefined : decodeURIComponent(value);
+    };
+
+    Cookies.set = function (key, value, options) {
+        options = Cookies._getExtendedOptions(options);
+        options.expires = Cookies._getExpiresDate(value === undefined ? -1 : options.expires);
+
+        Cookies._document.cookie = Cookies._generateCookieString(key, value, options);
+
+        return Cookies;
+    };
+
+    Cookies.expire = function (key, options) {
+        return Cookies.set(key, undefined, options);
+    };
+
+    Cookies._getExtendedOptions = function (options) {
+        return {
+            path: options &#x26;&#x26; options.path || Cookies.defaults.path,
+            domain: options &#x26;&#x26; options.domain || Cookies.defaults.domain,
+            expires: options &#x26;&#x26; options.expires || Cookies.defaults.expires,
+            secure: options &#x26;&#x26; options.secure !== undefined ?  options.secure : Cookies.defaults.secure
+        };
+    };
+
+    Cookies._isValidDate = function (date) {
+        return Object.prototype.toString.call(date) === &#x27;[object Date]&#x27; &#x26;&#x26; !isNaN(date.getTime());
+    };
+
+    Cookies._getExpiresDate = function (expires, now) {
+        now = now || new Date();
+
+        if (typeof expires === &#x27;number&#x27;) {
+            expires = expires === Infinity ?
+                Cookies._maxExpireDate : new Date(now.getTime() + expires * 1000);
+        } else if (typeof expires === &#x27;string&#x27;) {
+            expires = new Date(expires);
+        }
+
+        if (expires &#x26;&#x26; !Cookies._isValidDate(expires)) {
+            throw new Error(&#x27;`expires` parameter cannot be converted to a valid Date instance&#x27;);
+        }
+
+        return expires;
+    };
+
+    Cookies._generateCookieString = function (key, value, options) {
+        key = key.replace(/[^#$&#x26;+\^`|]/g, encodeURIComponent);
+        key = key.replace(/\(/g, &#x27;%28&#x27;).replace(/\)/g, &#x27;%29&#x27;);
+        value = (value + &#x27;&#x27;).replace(/[^!#$&#x26;-+\--:&#x3c;-\[\]-~]/g, encodeURIComponent);
+        options = options || {};
+
+        var cookieString = key + &#x27;=&#x27; + value;
+        cookieString += options.path ? &#x27;;path=&#x27; + options.path : &#x27;&#x27;;
+        cookieString += options.domain ? &#x27;;domain=&#x27; + options.domain : &#x27;&#x27;;
+        cookieString += options.expires ? &#x27;;expires=&#x27; + options.expires.toUTCString() : &#x27;&#x27;;
+        cookieString += options.secure ? &#x27;;secure&#x27; : &#x27;&#x27;;
+
+        return cookieString;
+    };
+
+    Cookies._getCacheFromString = function (documentCookie) {
+        var cookieCache = {};
+        var cookiesArray = documentCookie ? documentCookie.split(&#x27;; &#x27;) : [];
+
+        for (var i = 0; i &#x3c; cookiesArray.length; i++) {
+            var cookieKvp = Cookies._getKeyValuePairFromCookieString(cookiesArray[i]);
+
+            if (cookieCache[Cookies._cacheKeyPrefix + cookieKvp.key] === undefined) {
+                cookieCache[Cookies._cacheKeyPrefix + cookieKvp.key] = cookieKvp.value;
+            }
+        }
+
+        return cookieCache;
+    };
+
+    Cookies._getKeyValuePairFromCookieString = function (cookieString) {
+        // &#x22;=&#x22; is a valid character in a cookie value according to RFC6265, so cannot `spli ...</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.cookies-js.Cookies" id="apidoc.module.cookies-js.Cookies">module cookies-js.Cookies</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.cookies-js.Cookies.Cookies" id="apidoc.element.cookies-js.Cookies.Cookies">
+        function <span class="apidocSignatureSpan">cookies-js.</span>Cookies
+        <span class="apidocSignatureSpan">(window)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">Cookies = function (window) {
+    if (typeof window.document !== &#x27;object&#x27;) {
+        throw new Error(&#x27;Cookies.js requires a `window` with a `document` object&#x27;);
+    }
+
+    var Cookies = function (key, value, options) {
+        return arguments.length === 1 ?
+            Cookies.get(key) : Cookies.set(key, value, options);
+    };
+
+    // Allows for setter injection in unit tests
+    Cookies._document = window.document;
+
+    // Used to ensure cookie keys do not collide with
+    // built-in `Object` properties
+    Cookies._cacheKeyPrefix = &#x27;cookey.&#x27;; // Hurr hurr, :)
+
+    Cookies._maxExpireDate = new Date(&#x27;Fri, 31 Dec 9999 23:59:59 UTC&#x27;);
+
+    Cookies.defaults = {
+        path: &#x27;/&#x27;,
+        secure: false
+    };
+
+    Cookies.get = function (key) {
+        if (Cookies._cachedDocumentCookie !== Cookies._document.cookie) {
+            Cookies._renewCache();
+        }
+
+        var value = Cookies._cache[Cookies._cacheKeyPrefix + key];
+
+        return value === undefined ? undefined : decodeURIComponent(value);
+    };
+
+    Cookies.set = function (key, value, options) {
+        options = Cookies._getExtendedOptions(options);
+        options.expires = Cookies._getExpiresDate(value === undefined ? -1 : options.expires);
+
+        Cookies._document.cookie = Cookies._generateCookieString(key, value, options);
+
+        return Cookies;
+    };
+
+    Cookies.expire = function (key, options) {
+        return Cookies.set(key, undefined, options);
+    };
+
+    Cookies._getExtendedOptions = function (options) {
+        return {
+            path: options &#x26;&#x26; options.path || Cookies.defaults.path,
+            domain: options &#x26;&#x26; options.domain || Cookies.defaults.domain,
+            expires: options &#x26;&#x26; options.expires || Cookies.defaults.expires,
+            secure: options &#x26;&#x26; options.secure !== undefined ?  options.secure : Cookies.defaults.secure
+        };
+    };
+
+    Cookies._isValidDate = function (date) {
+        return Object.prototype.toString.call(date) === &#x27;[object Date]&#x27; &#x26;&#x26; !isNaN(date.getTime());
+    };
+
+    Cookies._getExpiresDate = function (expires, now) {
+        now = now || new Date();
+
+        if (typeof expires === &#x27;number&#x27;) {
+            expires = expires === Infinity ?
+                Cookies._maxExpireDate : new Date(now.getTime() + expires * 1000);
+        } else if (typeof expires === &#x27;string&#x27;) {
+            expires = new Date(expires);
+        }
+
+        if (expires &#x26;&#x26; !Cookies._isValidDate(expires)) {
+            throw new Error(&#x27;`expires` parameter cannot be converted to a valid Date instance&#x27;);
+        }
+
+        return expires;
+    };
+
+    Cookies._generateCookieString = function (key, value, options) {
+        key = key.replace(/[^#$&#x26;+\^`|]/g, encodeURIComponent);
+        key = key.replace(/\(/g, &#x27;%28&#x27;).replace(/\)/g, &#x27;%29&#x27;);
+        value = (value + &#x27;&#x27;).replace(/[^!#$&#x26;-+\--:&#x3c;-\[\]-~]/g, encodeURIComponent);
+        options = options || {};
+
+        var cookieString = key + &#x27;=&#x27; + value;
+        cookieString += options.path ? &#x27;;path=&#x27; + options.path : &#x27;&#x27;;
+        cookieString += options.domain ? &#x27;;domain=&#x27; + options.domain : &#x27;&#x27;;
+        cookieString += options.expires ? &#x27;;expires=&#x27; + options.expires.toUTCString() : &#x27;&#x27;;
+        cookieString += options.secure ? &#x27;;secure&#x27; : &#x27;&#x27;;
+
+        return cookieString;
+    };
+
+    Cookies._getCacheFromString = function (documentCookie) {
+        var cookieCache = {};
+        var cookiesArray = documentCookie ? documentCookie.split(&#x27;; &#x27;) : [];
+
+        for (var i = 0; i &#x3c; cookiesArray.length; i++) {
+            var cookieKvp = Cookies._getKeyValuePairFromCookieString(cookiesArray[i]);
+
+            if (cookieCache[Cookies._cacheKeyPrefix + cookieKvp.key] === undefined) {
+                cookieCache[Cookies._cacheKeyPrefix + cookieKvp.key] = cookieKvp.value;
+            }
+        }
+
+        return cookieCache;
+    };
+
+    Cookies._getKeyValuePairFromCookieString = function (cookieString) {
+        // &#x22;=&#x22; is a valid character in a cookie value according to RFC6265, so cannot `spli ...</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocFooterDiv">
+    [ this document was created with
+    <a href="https://github.com/kaizhu256/node-utility2" target="_blank">utility2</a>
+    ]
+</div>
+</div>
